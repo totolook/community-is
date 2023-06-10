@@ -8,15 +8,14 @@ on:
 
 env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
-
+  TAG: ${{ github.ref_name }}
 
 jobs:
   build:
     runs-on: ubuntu-22.04
     env:
       IMG_NAME: public/wso2is
-      TAG: ${{ github.ref_name }}
-
+      
     steps:
       - name: Clone the repo
         uses: actions/checkout@v3
@@ -83,4 +82,20 @@ jobs:
           build-args: WSO2_SERVER_VERSION=${{ env.WSO2_VERSION }} 
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
-      
+  
+  release:
+    runs-on: ubuntu-22.04
+    needs: [ build ]
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: wso2is-${{env.TAG}}
+      - uses: ncipollo/release-action@v1
+        with:
+          name: "Release WSO2 IS ${{env.TAG}}"
+          body: "Release WSO2 IS ${{env.TAG}}"
+          artifacts: "./**/*.jar"
+          artifactContentType: "Application/zip"
