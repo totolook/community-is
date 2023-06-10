@@ -2,8 +2,8 @@ name: product-is-builder
 
 on:
  push:
-    branches:
-        - main
+  tags:
+      - '*'
 
 
 env:
@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       IMG_NAME: public/wso2is
+      TAG: ${{ github.ref_name }}
 
     steps:
       - name: Clone the repo
@@ -24,7 +25,7 @@ jobs:
         with:
           repository: wso2/product-is
           path: wso2is
-          ref: v6.1.0
+          ref: ${{env.TAG}}
       - name: Set up Adopt JDK 11
         uses: actions/setup-java@v2
         with:
@@ -40,6 +41,9 @@ jobs:
       - name: Product-IS build with JDK 11 without Integration Tests
         run: |
           mvn clean install -f wso2is --batch-mode -Dmaven.test.skip=true | tee mvn-build.log
+      - name: get version from maven
+        run: |
+          echo "WSO2_VERSION=$(mvn help:evaluate -f wso2is -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       - name: Save Maven cache
         uses: skjolber/maven-cache-github-action@v1
         continue-on-error: true
@@ -48,11 +52,11 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
         with:
-            name: wso2is-6.1.0
-            path: wso2is/modules/distribution/target/wso2is-6.1.0.zip
+            name: wso2is-${{env.TAG}}
+            path: wso2is/modules/distribution/target/wso2is-${{ env.WSO2_VERSION }}.zip
       - name: Prepare docker build
         run: |
-          cp wso2is/modules/distribution/target/wso2is-6.1.0.zip docker/
+          cp wso2is/modules/distribution/target/wso2is-${{ env.WSO2_VERSION }}.zip docker/
       
       - name: Docker metadata
         id: metadata
@@ -74,7 +78,8 @@ jobs:
         with:
           context: docker
           file: docker/Dockerfile.ubuntu
-          push: ${{ github.event.base_ref =='refs/heads/main' && github.ref_type == 'tag' && !startsWith(github.ref, 'refs/tags/v0.')}}
+          # push: ${{ github.event.base_ref =='refs/heads/main' && github.ref_type == 'tag' && !startsWith(github.ref, 'refs/tags/v0.')}}
+          push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
       
