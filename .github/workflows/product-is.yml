@@ -98,5 +98,5 @@ jobs:
         with:
           name: "Release WSO2 IS ${{env.TAG}}"
           body: "Release WSO2 IS ${{env.TAG}}"
-          artifacts: "./**/*.jar"
+          artifacts: "./**/*.zip"
           artifactContentType: "Application/zip"
