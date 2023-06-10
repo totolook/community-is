@@ -3,7 +3,7 @@ name: product-is-builder
 on:
  push:
     branches:
-        - master
+        - main
 
 
 env:
