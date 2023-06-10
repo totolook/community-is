@@ -13,6 +13,8 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      IMG_NAME: public/wso2is
 
     steps:
       - name: Clone the repo
@@ -38,7 +40,7 @@ jobs:
       - name: Product-IS build with JDK 11 without Integration Tests
         run: |
           mvn clean install -f wso2is --batch-mode -Dmaven.test.skip=true | tee mvn-build.log
-      - name: Restore Maven cache
+      - name: Save Maven cache
         uses: skjolber/maven-cache-github-action@v1
         continue-on-error: true
         with:
@@ -47,5 +49,32 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
             name: wso2is-6.1.0
-            path: wso2is/modules/distribution/target/*.zip
+            path: wso2is/modules/distribution/target/wso2is-6.1.0.zip
+      - name: Prepare docker build
+        run: |
+          cp wso2is/modules/distribution/target/wso2is-6.1.0.zip docker/
+      
+      - name: Docker metadata
+        id: metadata
+        uses: docker/metadata-action@v3
+        with:
+            images: ${{ env.IMG_NAME }}
+            tags: |
+              type=semver,pattern={{version}}
+              type=semver,pattern={{major}}.{{minor}}
+              type=raw,value={{sha}},enable=${{ github.ref_type != 'tag' }}
+      - name: Login to Registry
+        uses: docker/login-action@v2
+        with:
+            registry: ${{ vars.REGISTRY }}
+            username: ${{ secrets.PH_USER }}
+            password: ${{ secrets.PH_TOKEN }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: docker/Dockerfile.ubuntu
+          push: ${{ github.event.base_ref =='refs/heads/main' && github.ref_type == 'tag' && !startsWith(github.ref, 'refs/tags/v0.')}}
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
       
