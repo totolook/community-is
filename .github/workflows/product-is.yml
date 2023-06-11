@@ -71,6 +71,8 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: docker
+          name: wso2is-${{env.TAG}}
+        
       # - name: Prepare docker build
       #   run: |
       #     cp wso2is/modules/distribution/target/wso2is-${{ env.WSO2_VERSION }}.zip docker/
