@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       IMG_NAME: public/wso2is
+    outputs:
+      wso2_version: ${{ env.WSO2_VERSION }}
       
     steps:
-      - name: Clone the repo
-        uses: actions/checkout@v3
       - name: Clone the Product is from WSO2
         uses: actions/checkout@v3
         with:
@@ -54,9 +54,25 @@ jobs:
         with:
             name: wso2is-${{env.TAG}}
             path: wso2is/modules/distribution/target/wso2is-${{ env.WSO2_VERSION }}.zip
-      - name: Prepare docker build
-        run: |
-          cp wso2is/modules/distribution/target/wso2is-${{ env.WSO2_VERSION }}.zip docker/
+     
+  
+  build-docker:
+    runs-on: ubuntu-22.04
+    needs: [build]
+    outputs:
+      imageurl: ${{ steps.build-push.outputs.imageid}}
+    env:
+      WSO2_VERSION: ${{needs.build.outputs.wso2_version}}
+    steps:
+      - name: Clone the repo
+        uses: actions/checkout@v3
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          path: docker
+      # - name: Prepare docker build
+      #   run: |
+      #     cp wso2is/modules/distribution/target/wso2is-${{ env.WSO2_VERSION }}.zip docker/
       
       - name: Docker metadata
         id: metadata
@@ -74,6 +90,7 @@ jobs:
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker image
+        id: build-push
         uses: docker/build-push-action@v2
         with:
           context: docker
@@ -83,10 +100,11 @@ jobs:
           build-args: WSO2_SERVER_VERSION=${{ env.WSO2_VERSION }} 
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+      
   
   release:
     runs-on: ubuntu-22.04
-    needs: [ build ]
+    needs: [ build,build-docker ]
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -97,6 +115,6 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           name: "Release WSO2 IS ${{env.TAG}}"
-          body: "Release WSO2 IS ${{env.TAG}}"
+          body: "Release WSO2 IS ${{env.TAG}} \n Image: ${{ needs.build-docker.outputs.imageurl }}"
           artifacts: "./**/*.zip"
           artifactContentType: "Application/zip"
