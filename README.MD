@@ -6,4 +6,4 @@ Main Repo [product-is](https://github.com/wso2/product-is)
 
 Thanks all effort to [WSO2 Team](https://wso2.com/) for amazing work. ❤️
 
-*Build for ❤️ by Toto*
+*Build with ❤️ by Toto*
