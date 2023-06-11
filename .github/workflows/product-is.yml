@@ -21,6 +21,8 @@ jobs:
       wso2_version: ${{ env.WSO2_VERSION }}
       
     steps:
+      - name: Clone the repo
+        uses: actions/checkout@v3
       - name: Clone the Product is from WSO2
         uses: actions/checkout@v3
         with:
