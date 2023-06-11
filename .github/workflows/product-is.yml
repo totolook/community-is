@@ -62,8 +62,6 @@ jobs:
   build-docker:
     runs-on: ubuntu-22.04
     needs: [build]
-    outputs:
-      imageurl: ${{ steps.build-push.outputs.imageid}}
     env:
       WSO2_VERSION: ${{needs.build.outputs.wso2_version}}
     steps:
@@ -109,7 +107,7 @@ jobs:
   
   release:
     runs-on: ubuntu-22.04
-    needs: [ build,build-docker ]
+    needs: [ build]
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -120,6 +118,6 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           name: "Release WSO2 IS ${{env.TAG}}"
-          body: "Release WSO2 IS ${{env.TAG}} \n Image: ${{ needs.build-docker.outputs.imageurl }}"
+          body: "Release WSO2 IS ${{env.TAG}}"
           artifacts: "./**/*.zip"
           artifactContentType: "Application/zip"
